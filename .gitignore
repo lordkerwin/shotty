@@ -1,0 +1,5 @@
+.build/
+Shotty.app/
+Shotty-*.zip
+.DS_Store
+*.xcodeproj
