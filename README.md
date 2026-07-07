@@ -39,16 +39,5 @@ if "No Background" is selected).
 Shotty checks GitHub Releases on launch (and via **Check for Updates…** in the menu). When a newer
 release exists it offers to download the `.zip` to your Downloads folder — unzip and replace the app.
 
-### Cutting a release
-
-```bash
-# 1. bump `shottyVersion` in Sources/shotty/Updater.swift, commit
-# 2.
-./Scripts/release.sh 0.2
-```
-
-Builds the app, zips it, and publishes a `v0.2` GitHub Release with the zip attached.
-
-> Note: the app is ad-hoc signed, not notarized (no Apple Developer ID). Downloaded builds are
-> Gatekeeper-quarantined, so a fully silent auto-install isn't possible — hence the download-and-swap
-> flow. Add a Developer ID + notarization (or Sparkle) later for seamless updates.
+> The app is ad-hoc signed, not notarized, so a downloaded build is Gatekeeper-quarantined:
+> right-click ▸ Open the first time to launch it.
