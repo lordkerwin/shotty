@@ -1,6 +1,6 @@
 import AppKit
 
-let shottyVersion = "0.1" // bump this when cutting a release; must match the git tag
+let shottyVersion = "0.2" // bump this when cutting a release; must match the git tag
 
 // Checks the latest GitHub Release on launch. If a newer version exists, shows a dialog that links to
 // the release page — the app never downloads anything. Dismissing it remembers that version so the
