@@ -25,6 +25,15 @@ Native Swift, no dependencies.
 
 The first capture asks for **Screen Recording** permission — grant it in System Settings and relaunch.
 
+> **First launch on another Mac.** Shotty is self-signed (not notarized), so a freshly downloaded
+> copy is quarantined. Two one-time steps and you're set:
+> 1. **Right-click ▸ Open** (or run the `xattr` command above) to get past Gatekeeper.
+> 2. **Grant Screen Recording** on the first ⌘⇧3 capture — like any screenshot app.
+>
+> Both stick afterwards, and updating to a newer release won't re-ask (releases share the same
+> signature). macOS may still re-prompt for Screen Recording occasionally — that's Apple's policy for
+> non-notarized apps, not a bug.
+
 ## Hotkeys
 
 - **⌘⇧3** — capture the whole screen
