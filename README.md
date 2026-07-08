@@ -84,3 +84,8 @@ swift run shotty     # dev run (permission attaches to your terminal)
 rebuilds — create it once with `./Scripts/dev-cert.sh` (otherwise it ad-hoc signs and macOS
 re-prompts every build). Cutting a release (`Scripts/release.sh`) builds, zips, and publishes a
 GitHub Release with the app attached.
+
+## License
+
+[MIT](LICENSE) — use it for anything, no strings. Provided **as-is**, with no warranty; the author
+isn't liable for any losses or damages arising from its use.
