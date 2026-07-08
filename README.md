@@ -76,8 +76,9 @@ version ships.
 ## Build from source
 
 ```bash
-swift run shotty     # dev run (permission attaches to your terminal)
-./build-app.sh       # build Shotty.app into the project folder
+swift run shotty       # dev run (permission attaches to your terminal)
+./build-app.sh         # build Shotty.app into the project folder
+./Scripts/install.sh   # build + replace /Applications/Shotty.app + relaunch
 ```
 
 `build-app.sh` signs with a stable self-signed identity so the Screen Recording grant survives
