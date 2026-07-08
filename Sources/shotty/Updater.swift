@@ -2,15 +2,16 @@ import AppKit
 
 let shottyVersion = "0.1" // bump this when cutting a release; must match the git tag
 
-// Minimal self-updater: reads the latest GitHub Release, compares versions, offers to download.
-// No dependency, no auth — works because the repo is public. Full silent install isn't possible
-// without an Apple Developer ID (Gatekeeper quarantines an unsigned downloaded app), so we hand the
-// user the downloaded .zip in Finder to swap in.
+// Checks the latest GitHub Release on launch. If a newer version exists, shows a dialog that links to
+// the release page — the app never downloads anything. Dismissing it remembers that version so the
+// user isn't nagged again until an even newer release appears.
 enum Updater {
     static let owner = "lordkerwin"
     static let repo = "shotty"
+    private static let skippedKey = "skippedVersion"
 
-    /// `verbose` = report "up to date" / errors too (menu). Silent on launch.
+    /// `verbose` (menu "Check for Updates…") always reports and ignores the remembered dismissal.
+    /// Silent (launch) stays quiet when up to date or when this version was already dismissed.
     static func check(verbose: Bool) {
         let url = URL(string: "https://api.github.com/repos/\(owner)/\(repo)/releases/latest")!
         var req = URLRequest(url: url)
@@ -24,12 +25,10 @@ enum Updater {
             }
             let latest = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
             let page = (json["html_url"] as? String).flatMap(URL.init)
-            let zip = ((json["assets"] as? [[String: Any]]) ?? [])
-                .first { ($0["name"] as? String)?.hasSuffix(".zip") == true }
-                .flatMap { ($0["browser_download_url"] as? String).flatMap(URL.init) }
             DispatchQueue.main.async {
                 if isNewer(latest, than: shottyVersion) {
-                    prompt(latest: latest, page: page, zip: zip)
+                    if !verbose, UserDefaults.standard.string(forKey: skippedKey) == latest { return }
+                    prompt(latest: latest, page: page)
                 } else if verbose {
                     info("You're up to date (v\(shottyVersion)).")
                 }
@@ -47,32 +46,16 @@ enum Updater {
         return false
     }
 
-    private static func prompt(latest: String, page: URL?, zip: URL?) {
+    private static func prompt(latest: String, page: URL?) {
         let a = NSAlert()
-        a.messageText = "There's an update"
-        a.informativeText = "Shotty v\(latest) is available — you have v\(shottyVersion)."
-        a.addButton(withTitle: "Download")
-        a.addButton(withTitle: "Later")
+        a.messageText = "Shotty v\(latest) is available"
+        a.informativeText = "You have v\(shottyVersion). Open the release page on GitHub to download it."
+        a.addButton(withTitle: "View on GitHub")
+        a.addButton(withTitle: "Ignore")
         NSApp.activate(ignoringOtherApps: true)
-        guard a.runModal() == .alertFirstButtonReturn else { return }
-        if let zip { download(zip) } else if let page { NSWorkspace.shared.open(page) }
-    }
-
-    private static func download(_ url: URL) {
-        let dest = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Downloads/\(url.lastPathComponent)")
-        URLSession.shared.downloadTask(with: url) { tmp, _, _ in
-            guard let tmp else {
-                DispatchQueue.main.async { info("Download failed.") }
-                return
-            }
-            try? FileManager.default.removeItem(at: dest)
-            try? FileManager.default.moveItem(at: tmp, to: dest)
-            DispatchQueue.main.async {
-                NSWorkspace.shared.activateFileViewerSelecting([dest])
-                info("Downloaded to your Downloads folder. Unzip it and replace Shotty.app, then reopen.")
-            }
-        }.resume()
+        let resp = a.runModal()
+        UserDefaults.standard.set(latest, forKey: skippedKey) // don't nag again until a newer version
+        if resp == .alertFirstButtonReturn, let page { NSWorkspace.shared.open(page) }
     }
 
     private static func info(_ text: String) {

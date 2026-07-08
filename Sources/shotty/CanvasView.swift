@@ -32,6 +32,7 @@ final class CanvasView: NSView {
     var onSelectionChanged: ((Annotation?) -> Void)?
     var selectedAnnotation: Annotation? { selected }
     private let ciContext = CIContext()
+    private var roundedCache: (frac: CGFloat, image: NSImage)?
     private var current: Annotation?
     private var selected: Annotation? { didSet { onSelectionChanged?(selected) } }
     private var dragLast: CGPoint = .zero
@@ -132,21 +133,27 @@ final class CanvasView: NSView {
         }
 
         let path = NSBezierPath(roundedRect: image, xRadius: radius, yRadius: radius)
+
+        // Rounded screenshot + drop shadow. The shadow is cast from the shot's real alpha silhouette
+        // (a pre-rounded copy), not a filled rectangle — so a window capture, which carries a
+        // transparent shadow margin, doesn't bleed black through that margin.
+        NSGraphicsContext.saveGraphicsState()
         if shadowStrength > 0 {
-            NSGraphicsContext.saveGraphicsState()
             let sh = NSShadow()
             sh.shadowColor = NSColor.black.withAlphaComponent(0.6 * shadowStrength)
             sh.shadowBlurRadius = max(6, radius) * (0.6 + shadowStrength)
             sh.shadowOffset = NSSize(width: 0, height: -6 - 8 * shadowStrength)
             sh.set()
-            NSColor.black.setFill()
-            path.fill() // opaque fill casts the shadow; the image covers it next
-            NSGraphicsContext.restoreGraphicsState()
         }
+        if let rounded = roundedShot() {
+            rounded.draw(in: image)
+        } else {
+            NSGraphicsContext.saveGraphicsState(); path.addClip(); baseImage.draw(in: image); NSGraphicsContext.restoreGraphicsState()
+        }
+        NSGraphicsContext.restoreGraphicsState()
 
         NSGraphicsContext.saveGraphicsState()
-        path.addClip() // clips both the image and annotations to the rounded corners
-        baseImage.draw(in: image)
+        path.addClip() // clips annotations to the rounded corners
         let s = image.width / baseImage.size.width
         let t = NSAffineTransform()
         t.translateX(by: image.origin.x, yBy: image.origin.y)
@@ -179,6 +186,31 @@ final class CanvasView: NSView {
             }
         }
         NSGraphicsContext.restoreGraphicsState()
+    }
+
+    // A full-resolution copy of the screenshot with rounded corners, so its shadow follows the real
+    // silhouette (and window captures keep their transparent margins). Cached by corner fraction.
+    private func roundedShot() -> NSImage? {
+        if let c = roundedCache, c.frac == cornerFraction { return c.image }
+        guard let cg = baseImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        let w = cg.width, h = cg.height
+        guard w > 0, h > 0,
+              let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: w, pixelsHigh: h,
+                bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
+              let ctx = NSGraphicsContext(bitmapImageRep: rep) else { return nil }
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = ctx
+        let r = NSRect(x: 0, y: 0, width: w, height: h)
+        let rad = cornerFraction * CGFloat(min(w, h))
+        NSBezierPath(roundedRect: r, xRadius: rad, yRadius: rad).addClip()
+        baseImage.draw(in: r)
+        NSGraphicsContext.restoreGraphicsState()
+        rep.size = baseImage.size // mark as a high-res rep of the point-size image
+        let img = NSImage(size: baseImage.size)
+        img.addRepresentation(rep)
+        roundedCache = (cornerFraction, img)
+        return img
     }
 
     private func drawHandle(_ p: CGPoint, _ s: CGFloat, round: Bool = false) {

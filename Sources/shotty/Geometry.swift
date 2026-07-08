@@ -28,5 +28,9 @@ func runSelfCheck() {
     assert(distancePointToSegment(CGPoint(x: 2, y: 0), CGPoint(x: -1, y: 0), CGPoint(x: 1, y: 0)) == 1) // past endpoint
     let r = normalizedRect(CGPoint(x: 3, y: 4), CGPoint(x: 1, y: 1))
     assert(r.origin.x == 1 && r.origin.y == 1 && r.width == 2 && r.height == 3)
+    assert(Updater.isNewer("0.2", than: "0.1"))
+    assert(Updater.isNewer("0.10", than: "0.9"))
+    assert(!Updater.isNewer("0.1", than: "0.1"))
+    assert(!Updater.isNewer("0.9", than: "0.10"))
     print("selfcheck ok")
 }

@@ -105,6 +105,7 @@ final class EditorController: NSObject, NSWindowDelegate {
 
         window.appearance = NSAppearance(named: .darkAqua)
         window.title = "Shotty"
+        window.isReleasedWhenClosed = false // ARC/this controller owns it; avoid a double-free on close
         window.contentView = root
         window.contentMinSize = NSSize(width: 760, height: 560)
         window.delegate = self
@@ -114,7 +115,10 @@ final class EditorController: NSObject, NSWindowDelegate {
         window.orderFrontRegardless() // surface above other apps even though we're an accessory app
     }
 
-    func windowWillClose(_ note: Notification) { onClose?(self) }
+    func windowWillClose(_ note: Notification) {
+        // Defer teardown so we don't deallocate self while AppKit is still inside the close.
+        DispatchQueue.main.async { [self] in onClose?(self) }
+    }
 
     private func hairline() -> NSView {
         let v = NSView()

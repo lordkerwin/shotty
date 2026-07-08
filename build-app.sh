@@ -33,6 +33,17 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-# Ad-hoc sign so macOS keeps the same permission grant across rebuilds.
-codesign --force --deep --sign - "$APP"
-echo "Built $APP — drag it to /Applications, then grant Screen Recording on first capture."
+# Sign with a STABLE self-signed identity so macOS keeps the Screen Recording grant across rebuilds.
+# Ad-hoc (`--sign -`) changes the signature every build, so TCC treats each build as a new app and
+# re-prompts. Create the identity once (see Scripts/dev-cert.sh), or set SHOTTY_SIGN_IDENTITY.
+IDENTITY="${SHOTTY_SIGN_IDENTITY:-Shotty Self-Signed}"
+# No -v: a self-signed identity is "not trusted" so -v hides it, but codesign still signs with it fine.
+if security find-identity -p codesigning 2>/dev/null | grep -q "\"$IDENTITY\""; then
+  codesign --force --deep --sign "$IDENTITY" "$APP"
+  echo "Built $APP, signed with '$IDENTITY'. Grant Screen Recording once; it persists across rebuilds."
+else
+  codesign --force --deep --sign - "$APP"
+  echo "Built $APP (ad-hoc signed)."
+  echo "⚠  No '$IDENTITY' identity found, so macOS will re-prompt for Screen Recording every rebuild."
+  echo "   Run ./Scripts/dev-cert.sh once to create it, then rebuild."
+fi
