@@ -51,6 +51,9 @@ final class CanvasView: NSView {
     init(image: NSImage) {
         baseImage = image
         super.init(frame: CGRect(origin: .zero, size: image.size))
+        paddingFraction = Prefs.padding   // restore last-used beautify settings
+        cornerFraction = Prefs.corner
+        shadowStrength = Prefs.shadow
     }
     required init?(coder: NSCoder) { fatalError() }
 
@@ -254,7 +257,10 @@ final class CanvasView: NSView {
         case .text:
             startText(atView: viewP)
         default:
-            current = Annotation(tool: tool, start: p, end: p, color: color, lineWidth: lineWidth)
+            let a = Annotation(tool: tool, start: p, end: p, color: color, lineWidth: lineWidth)
+            if tool == .blur { a.intensity = Prefs.blurIntensity }         // remembered amounts
+            else if tool == .pixelate { a.intensity = Prefs.pixelateIntensity }
+            current = a
         }
     }
 

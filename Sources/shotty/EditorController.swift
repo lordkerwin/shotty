@@ -378,6 +378,11 @@ final class EditorController: NSObject, NSWindowDelegate {
     @objc private func changeIntensity(_ s: NSSlider) {
         canvas.beginChange()
         intensityTarget?.intensity = CGFloat(s.doubleValue)
+        switch intensityTarget?.tool {   // remember the amount per tool
+        case .blur: Prefs.blurIntensity = CGFloat(s.doubleValue)
+        case .pixelate: Prefs.pixelateIntensity = CGFloat(s.doubleValue)
+        default: break
+        }
         canvas.needsDisplay = true
         if NSApp.currentEvent?.type == .leftMouseUp { canvas.commitChange() }
     }
@@ -390,15 +395,18 @@ final class EditorController: NSObject, NSWindowDelegate {
         canvas.needsDisplay = true
     }
     @objc private func changePadding(_ s: NSSlider) {
-        canvas.beginChange(); canvas.paddingFraction = CGFloat(s.doubleValue); canvas.needsDisplay = true
+        canvas.beginChange(); canvas.paddingFraction = CGFloat(s.doubleValue); Prefs.padding = canvas.paddingFraction
+        canvas.needsDisplay = true
         if NSApp.currentEvent?.type == .leftMouseUp { canvas.commitChange() }
     }
     @objc private func changeCorners(_ s: NSSlider) {
-        canvas.beginChange(); canvas.cornerFraction = CGFloat(s.doubleValue); canvas.needsDisplay = true
+        canvas.beginChange(); canvas.cornerFraction = CGFloat(s.doubleValue); Prefs.corner = canvas.cornerFraction
+        canvas.needsDisplay = true
         if NSApp.currentEvent?.type == .leftMouseUp { canvas.commitChange() }
     }
     @objc private func changeShadow(_ s: NSSlider) {
-        canvas.beginChange(); canvas.shadowStrength = CGFloat(s.doubleValue); canvas.needsDisplay = true
+        canvas.beginChange(); canvas.shadowStrength = CGFloat(s.doubleValue); Prefs.shadow = canvas.shadowStrength
+        canvas.needsDisplay = true
         if NSApp.currentEvent?.type == .leftMouseUp { canvas.commitChange() }
     }
     @objc private func pickRatio(_ p: NSPopUpButton) {
